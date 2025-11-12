@@ -1,15 +1,33 @@
 {
   "name": "campusconnectbackend",
   "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
+  "description": "CampusConnect backend service",
+  "license": "MIT",
   "author": "",
   "type": "module",
-  "main": "app.js",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon --watch src --ext js,json --exec node src/server.js",
+    "start": "NODE_ENV=production node src/server.js",
+    "lint": "eslint ."
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "express-validator": "^7.1.0",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.2",
     "nodemon": "^3.1.11"
+  },
+  "devDependencies": {
+    "eslint": "^9.11.1",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.12.0"
   }
 }
