@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['student', 'faculty', 'admin'],
+      enum: ['student', 'faculty', 'club_admin', 'admin'],
       default: 'student',
     },
     department: {
@@ -36,6 +36,14 @@ const userSchema = new mongoose.Schema(
       type: Number,
       min: 1,
       max: 6,
+    },
+    bio: {
+      type: String,
+      maxlength: 500,
+    },
+    interests: {
+      type: [String],
+      default: [],
     },
     avatarPath: String,
   },

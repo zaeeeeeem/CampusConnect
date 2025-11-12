@@ -20,6 +20,11 @@ const eventSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    club: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Club',
+      required: true,
+    },
     startDate: {
       type: Date,
       required: true,
@@ -55,6 +60,16 @@ const eventSchema = new mongoose.Schema(
       type: Number,
       min: 1,
     },
+    registrationDeadline: {
+      type: Date,
+      validate: {
+        validator(value) {
+          if (!value) return true;
+          return this.startDate ? value <= this.startDate : true;
+        },
+        message: 'registrationDeadline must be before the event start date',
+      },
+    },
     attendees: {
       type: [
         {
@@ -72,6 +87,12 @@ const eventSchema = new mongoose.Schema(
       validate: [(value) => value.length <= 10, 'Max 10 tags'],
       default: [],
     },
+    status: {
+      type: String,
+      enum: ['scheduled', 'completed', 'cancelled'],
+      default: 'scheduled',
+    },
+    certificatesIssuedAt: Date,
   },
   { timestamps: true }
 );

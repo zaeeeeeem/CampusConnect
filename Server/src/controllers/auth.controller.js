@@ -45,8 +45,26 @@ export const login = asyncHandler(async (req, res) => {
   res.json(new ApiResponse({ data: buildAuthPayload(user) }));
 });
 
-export const getProfile = asyncHandler(async (req, res) => {
+export const getCurrentProfile = asyncHandler(async (req, res) => {
   res.json(new ApiResponse({ data: req.user }));
+});
+
+export const updateCurrentProfile = asyncHandler(async (req, res) => {
+  const updates = {};
+  const { name, department, year, bio, interests } = req.body;
+
+  if (name) updates.name = name;
+  if (department) updates.department = department;
+  if (year !== undefined && year !== null && year !== '') updates.year = Number(year);
+  if (bio !== undefined) updates.bio = bio;
+  if (interests !== undefined) updates.interests = Array.isArray(interests) ? interests : [interests];
+
+  const updated = await User.findByIdAndUpdate(req.user._id, updates, {
+    new: true,
+    runValidators: true,
+  });
+
+  res.json(new ApiResponse({ data: updated, message: 'Profile updated' }));
 });
 
 export const logout = asyncHandler(async (_req, res) => {

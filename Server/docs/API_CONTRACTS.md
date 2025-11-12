@@ -1,219 +1,198 @@
-# CampusConnect REST API
+# CampusConnect REST API (v1)
 
-The CampusConnect backend exposes REST endpoints for announcements, events, clubs, and authentication. This document serves as the contract for the current implementation.
+The backend exposes secured REST endpoints under the `/api/v1` prefix. All responses follow the uniform shape:
 
-## Base URL
-```
-/api/v1
-```
-All examples assume the backend is running locally at `http://localhost:4000`.
-
-## Authorization
-- Protected endpoints expect a JWT in the `Authorization` header: `Bearer <token>`.
-- Tokens are generated during `POST /auth/register` or `POST /auth/login` responses.
-
-## Common Response Shape
 ```jsonc
 {
-  "data": {},
+  "data": { /* payload */ },
   "success": true,
-  "message": "Optional human readable note"
+  "message": "Optional human friendly detail"
 }
 ```
-Errors follow:
+
+Errors:
 ```jsonc
 {
   "success": false,
-  "message": "Short error summary",
-  "errors": { "field": "Validation details (optional)" }
+  "message": "Short reason",
+  "errors": { "field": "Validation detail" }
 }
 ```
 
-## Health Check & Static Assets
-- `GET /api/health` → `{ success: true }`
+Authentication uses JWT bearer tokens: `Authorization: Bearer <token>`.
+
+Static assets:
 - Uploaded images are served from `/images/<filename>`.
+- Certificate PDFs live in `/certificates/<filename>` internally and are fetched through the certificate endpoints.
 
----
-
-## Authentication
-### POST `/auth/register`
-Creates a new user.
-
-**Request Body**
-```json
-{
-  "name": "Jane Doe",
-  "email": "jane@school.edu",
-  "password": "supersecret",
-  "role": "student",
-  "department": "Computer Science",
-  "year": 3
-}
-```
-**Response** (`201`)
-```json
-{
-  "data": {
-    "user": { "_id": "...", "name": "Jane Doe", "email": "jane@school.edu", "role": "student" },
-    "token": "<jwt>"
-  },
-  "success": true,
-  "message": "Registration successful"
-}
-```
-
-### POST `/auth/login`
-Authenticates an existing user.
-
-**Request Body**
-```json
-{ "email": "jane@school.edu", "password": "supersecret" }
-```
-
-**Response** (`200`) matches register response.
-
-### GET `/auth/me`
-Returns the authenticated user (requires token).
-
-### POST `/auth/logout`
-Stateless logout that simply returns success (client removes token).
-
----
-
-## Announcements
-Announcements capture campus-wide updates. Creation requires authentication.
-
-### GET `/announcements`
-Query params:
-- `category` (optional): `academic|event|administrative|club|general`
-- `page` (default `1`)
-- `limit` (default `20`, max `50`)
-
-**Sample Response**
-```json
-{
-  "data": {
-    "items": [
-      {
-        "_id": "...",
-        "title": "Midterm Schedule",
-        "content": "Week 8 exams...",
-        "category": "academic",
-        "author": {
-          "_id": "...",
-          "name": "Prof. Malik",
-          "email": "malik@school.edu",
-          "role": "faculty"
-        },
-        "isPinned": false,
-        "tags": ["exam", "schedule"],
-        "createdAt": "2024-03-04T18:25:43.511Z"
-      }
-    ],
-    "pagination": {
-      "total": 32,
-      "page": 1,
-      "pages": 2
-    }
-  },
-  "success": true
-}
-```
-
-### GET `/announcements/category/:category`
-Alias for the filter above (supports pagination query params).
-
-### GET `/announcements/:id`
-Returns a single announcement.
-
-### POST `/announcements`
-Body rules:
-```json
-{
-  "title": "5-200 chars",
-  "content": "10-5000 chars",
-  "category": "enum listed above",
-  "isPinned": false,
-  "tags": ["Max 10 tags", "2-30 chars each"]
-}
-```
-Response mirrors `GET /announcements/:id` plus `message` field.
-
----
-
-## Events
-Events describe scheduled happenings. Image uploads use `multipart/form-data` with the field name `image`. The stored filename is returned as `imagePath` (accessible under `/images/<imagePath>`).
-
-### GET `/events`
-Query params: `category`, `page`, `limit` (same semantics as announcements). Items include organizer info and attendee IDs.
-
-### GET `/events/:id`
-Returns a full event document with populated organizer & attendees.
-
-### POST `/events`
-Requires auth.
-
-**Multipart Body Fields**
-- `title`, `description`, `location`, `category`
-- `startDate` (ISO8601 future date)
-- `endDate` (after `startDate`)
-- `maxAttendees` (optional integer)
-- `tags[]` (optional up to 10)
-- `image` (optional file)
-
-Response: newly created event with populated organizer and stored `imagePath` (relative filename).
-
----
-
-## Clubs
-Clubs represent student organizations.
-
-### GET `/clubs`
-Returns all clubs with member summaries.
-
-### GET `/clubs/:id`
-Detailed club info plus members.
-
-### POST `/clubs`
-Requires auth; automatically adds the creator as the first member. Accepts the following body:
-```json
-{
-  "name": "AI Society",
-  "description": "Weekly ML meetups",
-  "category": "technical",
-  "contactEmail": "aisociety@campus.edu"
-}
-```
-Optional `image` upload is handled the same way as the events endpoint.
-
----
-
-## Validation & Error Codes
-- `400 Bad Request`: validation failures (see `errors` object for details).
-- `401 Unauthorized`: missing/invalid token.
-- `403 Forbidden`: reserved for future role checks.
-- `404 Not Found`: unknown resource IDs or routes.
-- `409 Conflict`: unique constraints such as duplicate email or club name.
-- `500 Internal Server Error`: unhandled server issues.
-
-All validation is centralized via `express-validator`, so frontend errors are consistent and machine readable.
-
----
-
-## Environment Variables
-Create `Server/.env` using:
+Environment variables (`Server/.env`):
 ```
 PORT=4000
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=<secret>
 CORS_ORIGIN=http://localhost:5173
 IMAGE_BASE_PATH=../images
+CERTIFICATES_PATH=../certificates
 ```
 
 ---
 
-## Roadmap / TODO
-- Add pagination & search for clubs
-- Attendance mutations (`/events/:id/attend`)
-- Role-based permissions for admins vs. students
-- Email notifications/webhooks for pinned announcements
+## 1. Auth & Profile
+
+| Method | Endpoint | Description | Access |
+| ------ | -------- | ----------- | ------ |
+| POST | `/auth/register` | Create student/faculty/club admin account | Public |
+| POST | `/auth/login` | Obtain JWT | Public |
+| GET | `/auth/me` or `/auth/profile` | Current authenticated user | Authenticated |
+| PUT | `/auth/profile` | Update own core fields (name, dept, year, bio, interests) | Authenticated |
+| POST | `/auth/logout` | Stateless logout acknowledgment | Authenticated |
+
+**Register request**
+```json
+{
+  "name": "Jane Doe",
+  "email": "jane@campus.edu",
+  "password": "supersecret",
+  "role": "student",
+  "department": "Computer Science",
+  "year": 3
+}
+```
+
+**Profile management**
+- `GET /profile/:userId` – fetch any profile (auth required).
+- `PUT /profile/:userId` – update profile if owner or admin.
+- `POST /profile/upload-image` – upload avatar (`multipart/form-data` with `avatar` file field). Returns updated user with `avatarPath` pointing to `/images/<file>`.
+
+---
+
+## 2. User Administration
+
+| Method | Endpoint | Description | Access |
+| ------ | -------- | ----------- | ------ |
+| GET | `/users` | List all users | Admin |
+| PUT | `/users/:id/role` | Promote/demote user (`student`, `faculty`, `club_admin`, `admin`) | Admin |
+| DELETE | `/users/:id` | Remove user | Admin |
+
+---
+
+## 3. Clubs & Societies
+
+| Method | Endpoint | Description | Access |
+| ------ | -------- | ----------- | ------ |
+| POST | `/clubs` | Create new club/society. Body includes `name`, `description`, `category`, `contactEmail`, optional `adminIds[]`, `members[]`, `image`. Creator is recorded in `createdBy`. | Admin |
+| GET | `/clubs` | List clubs with members summary | Public |
+| GET | `/clubs/:id` | Club detail (members + admins) | Public |
+| PUT | `/clubs/:id` | Update metadata or image | Club Admin of that club / Admin |
+| DELETE | `/clubs/:id` | Delete club | Admin |
+| GET | `/clubs/:id/members` | List membership roster | Club Admin / Admin |
+| POST | `/clubs/:id/add-member` | Add user by `userId` | Club Admin / Admin |
+| DELETE | `/clubs/:id/remove-member/:userId` | Remove user from club | Club Admin / Admin |
+
+Implementation notes:
+- A club keeps both `admins[]` (who can manage) and `members[]`.
+- Creating a club automatically seeds `admins` (creator + `adminIds`) and ensures they are members.
+
+---
+
+## 4. Event Management
+
+Events belong to clubs and are managed by club admins or global admins.
+
+| Method | Endpoint | Description | Access |
+| ------ | -------- | ----------- | ------ |
+| POST | `/events` | Create event for a club. Accepts multipart body with image (`image` field) and fields: `title`, `description`, `clubId`, `category`, `location`, `startDate`, `endDate`, `registrationDeadline?`, `maxAttendees?`, `tags[]?`, `status?`. | Club Admin of club / Admin |
+| GET | `/events` | List events with optional `category`, `page`, `limit` filters | Public |
+| GET | `/events/:id` | Event detail with organizer + club data | Public |
+| PUT | `/events/:id` | Update event fields/image | Club Admin / Admin |
+| DELETE | `/events/:id` | Remove event | Club Admin / Admin |
+| POST | `/events/:id/register` | Student registration (auto-blocked if duplicate, deadline passed, or full) | Student |
+| GET | `/events/:id/participants` | List attendees | Club Admin / Admin |
+
+### Feedback
+
+| Method | Endpoint | Description | Access |
+| ------ | -------- | ----------- | ------ |
+| POST | `/events/:id/feedback` | Submit rating (1–5) + optional comment. User must be a registered attendee. | Student attendee |
+| GET | `/events/:id/feedback` | View feedback entries with user info | Club Admin / Admin |
+| DELETE | `/feedback/:id` | Remove inappropriate feedback | Admin |
+
+---
+
+## 5. Notification Center
+
+| Method | Endpoint | Description | Access |
+| ------ | -------- | ----------- | ------ |
+| POST | `/notifications` | Create notification with `title`, `message`, optional `link`, `targetRoles[]`, `club` | Club Admin / Admin |
+| GET | `/notifications` | List notifications visible to requesting user's role/club | Authenticated |
+| GET | `/notifications/:id` | Fetch single notification (visibility enforced) | Authenticated |
+| PUT | `/notifications/:id` | Update notification content/targets | Creator Club Admin / Admin |
+| DELETE | `/notifications/:id` | Delete notification | Admin |
+
+Visibility rules: notifications without `targetRoles` are public; otherwise requester must match a target role or be admin.
+
+---
+
+## 6. Certificates
+
+Certificates are generated as landscape PDFs stored inside `CERTIFICATES_PATH`.
+
+| Method | Endpoint | Description | Access |
+| ------ | -------- | ----------- | ------ |
+| POST | `/certificates/generate/:eventId` | Generate PDFs for all attendees of the event. Each attendee receives/upserts one certificate. | Club Admin of event’s club / Admin |
+| GET | `/certificates` | List certificates for logged-in user | Authenticated |
+| GET | `/certificates/:userId/:eventId` | Download a specific certificate (self or admin) | Owner / Admin |
+| DELETE | `/certificates/:id` | Remove certificate record + file | Admin |
+
+Implementation tip: certificate filenames follow `slugifiedEvent_slugifiedUser_timestamp.pdf`. PDFs show event title, attendee name, and event date.
+
+---
+
+## 7. Admin Dashboard
+
+| Method | Endpoint | Description |
+| ------ | -------- | ----------- |
+| GET | `/admin/stats` | Returns `{ userCount, clubCount, eventCount, feedbackCount }` |
+| GET | `/admin/logs` | Paginated (query `limit`, default 50) activity logs capturing key actions (club/event/certificate/user ops) |
+
+Activity log schema:
+```jsonc
+{
+  "user": { "_id": "...", "name": "" },
+  "action": "event.create",
+  "entity": "Event",
+  "entityId": "...",
+  "metadata": { "club": "..." },
+  "createdAt": "2024-06-01T12:00:00Z"
+}
+```
+
+---
+
+## 8. Role Matrix
+
+| Role | Capabilities |
+| ---- | ------------ |
+| Student | Register for events, submit feedback, view notifications and certificates, manage own profile |
+| Faculty | Same as students (future extensions can grant limited club/event permissions) |
+| Club Admin | Everything a student can do, plus manage their clubs, create/update events, notifications, and generate certificates |
+| Admin | Global CRUD over users, clubs, events, notifications, feedback, certificates, and access to stats/logs |
+
+---
+
+## 9. Validation Highlights
+
+- **Announcements**: unchanged (title 5–200 chars, etc.).
+- **Clubs**: `name`, `description`, `category`, `contactEmail` required. Optional `adminIds[]`, `members[]` must be valid Mongo IDs.
+- **Events**: require `clubId`, ISO8601 dates (`startDate` future, `endDate` after `startDate`, `registrationDeadline` ≤ `startDate`), optional `status` (`scheduled|completed|cancelled`).
+- **Feedback**: rating 1–5, comment ≤ 1000 chars.
+- **Notifications**: `title` 3–150 chars, `message` up to 1000 chars, optional `targetRoles[]`.
+- **Profiles**: `bio` ≤ 500 chars, `interests[]` max 20 entries.
+
+---
+
+## 10. Suggested Next Steps
+
+- Hook frontend views to these endpoints (see role matrix for gating UI controls).
+- Extend tests (Supertest + Mongo-memory) to cover role guards and PDF generation.
+- Consider background job for email notifications when new notifications are created.

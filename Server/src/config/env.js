@@ -15,6 +15,7 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET ?? '',
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
   imageBasePath: path.resolve(process.cwd(), process.env.IMAGE_BASE_PATH ?? 'images'),
+  certificateBasePath: path.resolve(process.cwd(), process.env.CERTIFICATES_PATH ?? 'certificates'),
 };
 
 export const isDevelopment = env.nodeEnv !== 'production';

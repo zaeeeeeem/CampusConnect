@@ -35,6 +35,19 @@ const clubSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    admins: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      ],
+      default: [],
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
     imagePath: String,
   },
   { timestamps: true }
