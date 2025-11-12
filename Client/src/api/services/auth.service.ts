@@ -16,7 +16,7 @@ export const authService = {
 
   // Get current user profile
   getProfile: async (): Promise<ApiResponse<User>> => {
-    const response = await axiosClient.get('/auth/profile');
+    const response = await axiosClient.get('/auth/me');
     return response.data;
   },
 
@@ -35,7 +35,7 @@ export const authService = {
   // Upload profile image
   uploadProfileImage: async (file: File): Promise<ApiResponse<{ imageUrl: string }>> => {
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('avatar', file);
     const response = await axiosClient.post('/profile/upload-image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

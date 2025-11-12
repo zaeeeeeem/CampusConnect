@@ -26,7 +26,8 @@ export const StudentDashboard = () => {
       ]);
 
       if (eventsRes.success) {
-        const upcoming = eventsRes.data
+        const eventsData = Array.isArray(eventsRes.data) ? eventsRes.data : [];
+        const upcoming = eventsData
           .filter((e) => new Date(e.startDate) > new Date())
           .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
           .slice(0, 3);
@@ -42,6 +43,7 @@ export const StudentDashboard = () => {
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
+      setUpcomingEvents([]);
     } finally {
       setLoading(false);
     }

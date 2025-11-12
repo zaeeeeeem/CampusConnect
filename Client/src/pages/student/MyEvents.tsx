@@ -19,10 +19,12 @@ export const MyEvents = () => {
       const response = await eventService.getAll();
       if (response.success) {
         // Filter for events user is registered for
-        setEvents(response.data);
+        const eventsData = Array.isArray(response.data) ? response.data : [];
+        setEvents(eventsData);
       }
     } catch (error) {
       console.error('Failed to load events:', error);
+      setEvents([]);
     } finally {
       setLoading(false);
     }

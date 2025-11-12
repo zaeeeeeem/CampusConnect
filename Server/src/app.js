@@ -24,7 +24,7 @@ app.use('/images', express.static(env.imageBasePath));
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 100,
+    limit: 10000,
   })
 );
 

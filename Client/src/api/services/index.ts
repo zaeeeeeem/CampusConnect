@@ -6,3 +6,4 @@ export { feedbackService } from './feedback.service';
 export { notificationService } from './notification.service';
 export { certificateService } from './certificate.service';
 export { adminService } from './admin.service';
+export { userService } from './user.service';

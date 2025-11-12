@@ -31,4 +31,10 @@ export const notificationService = {
     const response = await axiosClient.delete(`/notifications/${id}`);
     return response.data;
   },
+
+  // Mark notification as read
+  markAsRead: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await axiosClient.put(`/notifications/${id}/read`);
+    return response.data;
+  },
 };
