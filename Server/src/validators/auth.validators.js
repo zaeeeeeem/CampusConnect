@@ -7,6 +7,8 @@ export const registerValidator = [
   body('role').optional().isIn(['student', 'faculty', 'club_admin', 'admin']),
   body('department').optional().isLength({ min: 2, max: 100 }),
   body('year').optional().isInt({ min: 1, max: 6 }),
+  body('clubId').optional().isMongoId(),
+  body('club').optional().isMongoId(),
 ];
 
 export const loginValidator = [

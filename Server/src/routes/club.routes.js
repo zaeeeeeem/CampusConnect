@@ -22,15 +22,13 @@ const memberValidator = [body('userId').isMongoId()];
 
 router.get('/', getClubs);
 router.get('/:id', getClubById);
-router.get(
-  '/:id/members',
+router.get('/:id/members',
   requireAuth,
   authorizeRoles(Roles.ADMIN, Roles.CLUB_ADMIN),
   getClubMembers
 );
 
-router.post(
-  '/',
+router.post('/',
   requireAuth,
   authorizeRoles(Roles.ADMIN),
   upload.single('image'),
@@ -39,8 +37,7 @@ router.post(
   createClub
 );
 
-router.put(
-  '/:id',
+router.put('/:id',
   requireAuth,
   authorizeRoles(Roles.ADMIN, Roles.CLUB_ADMIN),
   upload.single('image'),
@@ -51,8 +48,7 @@ router.put(
 
 router.delete('/:id', requireAuth, authorizeRoles(Roles.ADMIN), deleteClub);
 
-router.post(
-  '/:id/add-member',
+router.post('/:id/add-member',
   requireAuth,
   authorizeRoles(Roles.ADMIN, Roles.CLUB_ADMIN),
   memberValidator,
@@ -60,8 +56,7 @@ router.post(
   addClubMember
 );
 
-router.delete(
-  '/:id/remove-member/:userId',
+router.delete('/:id/remove-member/:userId',
   requireAuth,
   authorizeRoles(Roles.ADMIN, Roles.CLUB_ADMIN),
   removeClubMember

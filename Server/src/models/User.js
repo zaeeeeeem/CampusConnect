@@ -45,10 +45,25 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    club: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Club',
+    },
     avatarPath: String,
   },
   { timestamps: true }
 );
+
+userSchema.virtual('clubId').get(function getClubId() {
+  if (!this.club) return undefined;
+  if (typeof this.club === 'object' && this.club !== null && this.club._id) {
+    return this.club._id;
+  }
+  return this.club;
+});
+
+userSchema.set('toObject', { virtuals: true });
+userSchema.set('toJSON', { virtuals: true });
 
 userSchema.pre('save', async function hashPassword(next) {
   if (!this.isModified('password')) return next();
@@ -62,7 +77,7 @@ userSchema.methods.comparePassword = function comparePassword(candidate) {
 };
 
 userSchema.methods.toJSON = function toJSON() {
-  const obj = this.toObject();
+  const obj = this.toObject({ virtuals: true });
   delete obj.password;
   return obj;
 };

@@ -7,4 +7,6 @@ export const profileUpdateValidator = [
   body('bio').optional().isLength({ max: 500 }),
   body('interests').optional().isArray({ max: 20 }),
   body('interests.*').optional().isString().isLength({ min: 2, max: 50 }),
+  body('clubId').optional().isMongoId(),
+  body('club').optional().isMongoId(),
 ];

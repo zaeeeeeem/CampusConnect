@@ -6,7 +6,7 @@ import { Roles } from '../utils/roles.js';
 import { recordActivity } from '../utils/activityLogger.js';
 
 export const getUsers = asyncHandler(async (_req, res) => {
-  const users = await User.find().select('-password');
+  const users = await User.find().select('-password').populate('club', 'name category');
   res.json(new ApiResponse({ data: users }));
 });
 
@@ -16,11 +16,15 @@ export const updateUserRole = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Invalid role supplied');
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.params.id,
-    { role },
-    { new: true, runValidators: true }
-  );
+  const updatePayload = { role };
+  if (req.body.clubId || req.body.club) {
+    updatePayload.club = req.body.club || req.body.clubId;
+  }
+
+  const user = await User.findByIdAndUpdate(req.params.id, updatePayload, {
+    new: true,
+    runValidators: true,
+  }).populate('club', 'name category');
 
   if (!user) {
     throw new ApiError(404, 'User not found');

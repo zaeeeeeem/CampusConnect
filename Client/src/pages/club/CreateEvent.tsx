@@ -27,8 +27,10 @@ export const CreateEvent = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if user has clubId
     if (!user?.clubId) {
-      alert('Club ID not found');
+      alert('You are not associated with any club. Please contact the administrator to assign you to a club.');
       return;
     }
 

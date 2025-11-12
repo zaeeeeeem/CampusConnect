@@ -9,6 +9,7 @@ Exhaustive REST contract for the CampusConnect backend. Defaults assume local de
 - **Pagination defaults:** `page=1`, `limit=20`, `limit≤50`.
 - **Uploads:** use `multipart/form-data` when attaching files. Image endpoints expect `image` or `avatar` file field; certificates generated server-side.
 - **Static assets:** `/images/<filename>` serves uploaded media.
+- **User objects:** All user payloads include `clubId` (if linked) and a populated `club` object with `{ _id, name, category }`.
 - **Environment variables:**
   ```env
   PORT=4000
@@ -54,14 +55,15 @@ Exhaustive REST contract for the CampusConnect backend. Defaults assume local de
     "password": "SuperSecret9",
     "role": "student",       // optional: student|faculty|club_admin|admin
     "department": "CSE",     // optional 2-100 chars
-    "year": 3                 // optional 1-6
+    "year": 3,                // optional 1-6
+    "clubId": "64f..."        // optional: required when creating club_admins
   }
   ```
 - **Response:**
   ```jsonc
   {
     "data": {
-      "user": { "_id": "...", "name": "Jane Doe", "email": "jane@campus.edu", "role": "student" },
+      "user": { "_id": "...", "name": "Jane Doe", "email": "jane@campus.edu", "role": "student", "clubId": null, "club": null },
       "token": "<jwt>"
     },
     "message": "Registration successful",
@@ -75,11 +77,11 @@ Exhaustive REST contract for the CampusConnect backend. Defaults assume local de
 
 ### GET `/auth/me`
 - **Headers:** `Authorization` required.
-- **Response:** Authenticated user object (password stripped).
+- **Response:** Authenticated user object (password stripped, includes `clubId` + `club` when applicable).
 
 ### PUT `/auth/profile`
 - **Headers:** `Authorization` required.
-- **Body:** subset of `{ "name", "department", "year", "bio", "interests" }`.
+- **Body:** subset of `{ "name", "department", "year", "bio", "interests", "clubId" }`.
 - **Response:** Updated user.
 
 ### POST `/auth/logout`
@@ -94,7 +96,7 @@ Exhaustive REST contract for the CampusConnect backend. Defaults assume local de
 
 ### PUT `/profile/:userId`
 - **Access:** User editing self or Admin.
-- **Body:** Same fields as `/auth/profile`.
+- **Body:** Same fields as `/auth/profile` (including optional `clubId`).
 - **Response:** Updated profile.
 
 ### POST `/profile/upload-image`
@@ -109,7 +111,7 @@ Exhaustive REST contract for the CampusConnect backend. Defaults assume local de
 - **Response:** Array of users (sans passwords).
 
 ### PUT `/users/:id/role`
-- **Body:** `{ "role": "club_admin" }`.
+- **Body:** `{ "role": "club_admin", "clubId": "64f..." }` (include `clubId` whenever promoting to `club_admin`).
 - **Response:** Updated user record; action logged.
 
 ### DELETE `/users/:id`

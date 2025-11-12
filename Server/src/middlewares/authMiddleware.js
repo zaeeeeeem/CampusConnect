@@ -13,7 +13,7 @@ export const requireAuth = asyncHandler(async (req, res, next) => {
   const token = authHeader.split(' ')[1];
   const payload = verifyToken(token);
 
-  const user = await User.findById(payload.userId).select('-password');
+  const user = await User.findById(payload.userId).select('-password').populate('club', 'name category');
   if (!user) {
     throw new ApiError(401, 'User no longer exists');
   }

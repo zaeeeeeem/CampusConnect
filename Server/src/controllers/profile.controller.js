@@ -5,13 +5,15 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { Roles } from '../utils/roles.js';
 
 const buildUpdates = (body) => {
-  const allowed = ['name', 'department', 'year', 'bio', 'interests'];
+  const allowed = ['name', 'department', 'year', 'bio', 'interests', 'club', 'clubId'];
   return allowed.reduce((acc, field) => {
     if (body[field] !== undefined) {
       if (field === 'year') {
         acc[field] = Number(body[field]);
       } else if (field === 'interests') {
         acc[field] = Array.isArray(body[field]) ? body[field] : [body[field]];
+      } else if (field === 'clubId') {
+        acc.club = body[field];
       } else {
         acc[field] = body[field];
       }
@@ -21,7 +23,7 @@ const buildUpdates = (body) => {
 };
 
 export const getProfileById = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.userId).select('-password');
+  const user = await User.findById(req.params.userId).select('-password').populate('club', 'name category');
   if (!user) {
     throw new ApiError(404, 'User not found');
   }
@@ -36,7 +38,7 @@ export const updateProfileById = asyncHandler(async (req, res) => {
   const user = await User.findByIdAndUpdate(req.params.userId, buildUpdates(req.body), {
     new: true,
     runValidators: true,
-  });
+  }).populate('club', 'name category');
 
   if (!user) {
     throw new ApiError(404, 'User not found');

@@ -15,8 +15,12 @@ export const userService = {
   },
 
   // Update user role (Admin only)
-  updateRole: async (userId: string, role: string): Promise<ApiResponse<User>> => {
-    const response = await axiosClient.put(`/users/${userId}/role`, { role });
+  updateRole: async (userId: string, role: string, clubId?: string): Promise<ApiResponse<User>> => {
+    const payload: any = { role };
+    if (clubId) {
+      payload.clubId = clubId;
+    }
+    const response = await axiosClient.put(`/users/${userId}/role`, payload);
     return response.data;
   },
 

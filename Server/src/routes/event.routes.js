@@ -22,8 +22,7 @@ const router = Router();
 router.get('/', getEvents);
 router.get('/:id', getEventById);
 
-router.post(
-  '/',
+router.post('/',
   requireAuth,
   authorizeRoles(Roles.CLUB_ADMIN, Roles.ADMIN),
   upload.single('image'),
@@ -32,8 +31,7 @@ router.post(
   createEvent
 );
 
-router.put(
-  '/:id',
+router.put('/:id',
   requireAuth,
   authorizeRoles(Roles.CLUB_ADMIN, Roles.ADMIN),
   upload.single('image'),
@@ -44,14 +42,12 @@ router.put(
 
 router.delete('/:id', requireAuth, authorizeRoles(Roles.CLUB_ADMIN, Roles.ADMIN), deleteEvent);
 router.post('/:id/register', requireAuth, registerForEvent);
-router.get(
-  '/:id/participants',
+router.get('/:id/participants',
   requireAuth,
   authorizeRoles(Roles.CLUB_ADMIN, Roles.ADMIN),
   getEventParticipants
 );
-router.post(
-  '/:id/feedback',
+router.post('/:id/feedback',
   requireAuth,
   feedbackValidator,
   validateRequest,

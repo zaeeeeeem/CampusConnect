@@ -1,11 +1,31 @@
 import axiosClient from '../axiosClient';
 import { Event, User, ApiResponse } from '../../types';
 
+// Helper function to normalize event data from backend
+const normalizeEvent = (event: Partial<Event> & { _id?: string }): Event => {
+  return {
+    ...event,
+    id: event._id || event.id || '', // Map MongoDB _id to id
+    title: event.title || '',
+    description: event.description || '',
+    date: event.date || new Date().toISOString(),
+  } as Event;
+};
+
 export const eventService = {
   // Get all events
   getAll: async (): Promise<ApiResponse<Event[]>> => {
     const response = await axiosClient.get('/events');
-    return response.data;
+    const result = response.data;
+
+    // Handle paginated response
+    if (result.success && result.data) {
+      // Check if data has items (paginated) or is direct array
+      const eventsArray = result.data.items || result.data;
+      result.data = Array.isArray(eventsArray) ? eventsArray.map(normalizeEvent) : [];
+    }
+
+    return result;
   },
 
   // Get event by ID

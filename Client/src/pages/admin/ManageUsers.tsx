@@ -1,17 +1,25 @@
 import { useState, useEffect } from 'react';
-import { userService } from '../../api/services';
-import { User } from '../../types';
+import { userService, clubService } from '../../api/services';
+import { User, Club } from '../../types';
 import { LoadingSpinner, EmptyState } from '../../components/shared';
+import { useAuth } from '../../context/AuthContext';
 
 export const ManageUsers = () => {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [newRole, setNewRole] = useState('');
+  const [selectedClubId, setSelectedClubId] = useState('');
 
   useEffect(() => {
     loadUsers();
+    loadClubs();
   }, []);
 
   useEffect(() => {
@@ -29,6 +37,20 @@ export const ManageUsers = () => {
       console.error('Failed to load users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadClubs = async () => {
+    try {
+      const response = await clubService.getAll();
+      if (response.success) {
+        const clubsData = Array.isArray(response.data) ? response.data : [];
+        console.log('Loaded clubs:', clubsData);
+        setClubs(clubsData);
+      }
+    } catch (error) {
+      console.error('Failed to load clubs:', error);
+      setClubs([]);
     }
   };
 
@@ -50,22 +72,45 @@ export const ManageUsers = () => {
     setFilteredUsers(filtered);
   };
 
-  const handleChangeRole = async (userId: string, currentRole: string) => {
-    const newRole = prompt(`Change role for this user. Current: ${currentRole}\n\nEnter new role (student, faculty, club_admin, admin):`);
-    if (!newRole) return;
+  const handleChangeRole = (user: User) => {
+    setSelectedUser(user);
+    setNewRole(user.role);
+    setSelectedClubId(user.clubId || '');
+    setShowRoleModal(true);
+  };
+
+  const handleSubmitRoleChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedUser) return;
 
     if (!['student', 'faculty', 'club_admin', 'admin'].includes(newRole)) {
       alert('Invalid role!');
       return;
     }
 
+    if (newRole === 'club_admin' && !selectedClubId) {
+      alert('Please select a club for the club admin!');
+      return;
+    }
+
     try {
-      const response = await userService.updateRole(userId, newRole);
+      const clubId = newRole === 'club_admin' ? selectedClubId : undefined;
+      console.log('Current user:', currentUser);
+      console.log('Current user role:', currentUser?.role);
+      console.log('Updating role:', { userId: selectedUser.id, newRole, clubId });
+      const response = await userService.updateRole(selectedUser.id, newRole, clubId);
+      console.log('Update response:', response);
       if (response.success) {
         alert('User role updated successfully!');
+        setShowRoleModal(false);
+        setSelectedUser(null);
+        setNewRole('');
+        setSelectedClubId('');
         loadUsers();
       }
     } catch (error: any) {
+      console.error('Update role error:', error);
       alert(error.message || 'Failed to update user role');
     }
   };
@@ -168,6 +213,9 @@ export const ManageUsers = () => {
                     Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Club
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Department/Year
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -200,6 +248,15 @@ export const ManageUsers = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
+                        {user.clubId ? (
+                          clubs.find(c => c.id === user.clubId)?.name || user.clubId
+                        ) : (
+                          '-'
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
                         {user.department && `${user.department}`}
                         {user.year && ` - Year ${user.year}`}
                         {!user.department && !user.year && '-'}
@@ -207,7 +264,7 @@ export const ManageUsers = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
-                        onClick={() => handleChangeRole(user.id, user.role)}
+                        onClick={() => handleChangeRole(user)}
                         className="text-blue-600 hover:text-blue-900"
                       >
                         Change Role
@@ -223,6 +280,93 @@ export const ManageUsers = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Change Role Modal */}
+      {showRoleModal && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Change User Role</h2>
+
+            <div className="mb-4">
+              <p className="text-sm text-gray-600">
+                User: <span className="font-medium text-gray-900">{selectedUser.name}</span>
+              </p>
+              <p className="text-sm text-gray-600">
+                Email: <span className="font-medium text-gray-900">{selectedUser.email}</span>
+              </p>
+              <p className="text-sm text-gray-600">
+                Current Role: <span className="font-medium text-gray-900">{selectedUser.role}</span>
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmitRoleChange} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Role *
+                </label>
+                <select
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="student">Student</option>
+                  <option value="faculty">Faculty</option>
+                  <option value="club_admin">Club Admin</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
+              {newRole === 'club_admin' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assign to Club *
+                  </label>
+                  <select
+                    value={selectedClubId}
+                    onChange={(e) => setSelectedClubId(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select a club</option>
+                    {clubs.map((club) => (
+                      <option key={club.id} value={club.id}>
+                        {club.name} ({club.category})
+                      </option>
+                    ))}
+                  </select>
+                  {clubs.length === 0 && (
+                    <p className="mt-2 text-sm text-red-600">
+                      No clubs available. Please create a club first.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Update Role
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowRoleModal(false);
+                    setSelectedUser(null);
+                    setNewRole('');
+                    setSelectedClubId('');
+                  }}
+                  className="flex-1 px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

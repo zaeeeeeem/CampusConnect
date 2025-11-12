@@ -8,8 +8,7 @@ import { upload } from '../middlewares/upload.js';
 const router = Router();
 
 router.get('/:userId', requireAuth, getProfileById);
-router.put(
-  '/:userId',
+router.put('/:userId',
   requireAuth,
   profileUpdateValidator,
   validateRequest,

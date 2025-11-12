@@ -6,12 +6,29 @@ import { signToken } from '../utils/token.js';
 
 const sanitizeUser = (user = {}) => (typeof user.toJSON === 'function' ? user.toJSON() : user);
 
-const buildAuthPayload = (user) => {
-  const safeUser = sanitizeUser(user);
+const populateUserClub = async (user) => {
+  if (!user) return user;
+  if (typeof user.populate === 'function') {
+    await user.populate('club', 'name category');
+    return user;
+  }
+  return User.findById(user._id).populate('club', 'name category');
+};
+
+const buildAuthPayload = async (user) => {
+  const hydratedUser = await populateUserClub(user);
+  const safeUser = sanitizeUser(hydratedUser);
   return {
     user: safeUser,
     token: signToken({ userId: safeUser._id }),
   };
+};
+
+const syncClubField = (body = {}) => {
+  if (body.clubId && !body.club) {
+    body.club = body.clubId;
+  }
+  return body;
 };
 
 export const register = asyncHandler(async (req, res) => {
@@ -20,11 +37,13 @@ export const register = asyncHandler(async (req, res) => {
     throw new ApiError(409, 'Email already in use');
   }
 
-  const user = await User.create(req.body);
+  const payload = syncClubField({ ...req.body });
+  const user = await User.create(payload);
+  await populateUserClub(user);
 
   res.status(201).json(
     new ApiResponse({
-      data: buildAuthPayload(user),
+      data: await buildAuthPayload(user),
       message: 'Registration successful',
     })
   );
@@ -42,7 +61,7 @@ export const login = asyncHandler(async (req, res) => {
     throw new ApiError(401, 'Invalid credentials');
   }
 
-  res.json(new ApiResponse({ data: buildAuthPayload(user) }));
+  res.json(new ApiResponse({ data: await buildAuthPayload(user) }));
 });
 
 export const getCurrentProfile = asyncHandler(async (req, res) => {
@@ -51,18 +70,19 @@ export const getCurrentProfile = asyncHandler(async (req, res) => {
 
 export const updateCurrentProfile = asyncHandler(async (req, res) => {
   const updates = {};
-  const { name, department, year, bio, interests } = req.body;
+  const { name, department, year, bio, interests, clubId, club } = req.body;
 
   if (name) updates.name = name;
   if (department) updates.department = department;
   if (year !== undefined && year !== null && year !== '') updates.year = Number(year);
   if (bio !== undefined) updates.bio = bio;
   if (interests !== undefined) updates.interests = Array.isArray(interests) ? interests : [interests];
+  if (clubId || club) updates.club = club || clubId;
 
   const updated = await User.findByIdAndUpdate(req.user._id, updates, {
     new: true,
     runValidators: true,
-  });
+  }).populate('club', 'name category');
 
   res.json(new ApiResponse({ data: updated, message: 'Profile updated' }));
 });

@@ -15,6 +15,17 @@ axiosClient.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // Debug: log token payload for club-related requests
+      if (config.url?.includes('/clubs')) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          console.log('Token payload for club request:', payload);
+          console.log('Request URL:', config.url);
+          console.log('Request method:', config.method);
+        } catch (e) {
+          console.error('Failed to decode token:', e);
+        }
+      }
     }
     return config;
   },

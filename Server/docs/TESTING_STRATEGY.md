@@ -1,4 +1,24 @@
-# CampusConnect API Manual Test Plan (Postman)
+# CampusConnect Manual Test Plan & Seed Data
+
+## Quick Start: Seed the Database
+Before running the Postman collection, populate MongoDB with realistic data:
+
+```bash
+cd Server
+npm run seed
+```
+
+This script clears existing collections, creates Pakistani-themed seed data (clubs, events, announcements, notifications, feedback, certificates). After it finishes, log in with:
+
+- Admin: `zaeem@lgu.edu` / `supersecret`
+- Club Admins: `ahsan@lgu.edu` / `supersecret`, `bakhtawar@lgu.edu` / `supersecret`
+- Students: `saad@lgu.edu` / `supersecret`, `nimra@lgu.edu` / `supersecret`
+
+Use these accounts while executing the manual test steps below.
+
+---
+
+## CampusConnect API Manual Test Plan (Postman)
 
 The goal is to exercise all write-heavy endpoints end-to-end using Postman before wiring up automated tests. Follow the flow in order so each step seeds data for the next.
 

@@ -9,8 +9,7 @@ import { validateRequest } from '../middlewares/validateRequest.js';
 const router = Router();
 
 router.get('/', requireAuth, authorizeRoles(Roles.ADMIN), getUsers);
-router.put(
-  '/:id/role',
+router.put('/:id/role',
   requireAuth,
   authorizeRoles(Roles.ADMIN),
   userRoleValidator,

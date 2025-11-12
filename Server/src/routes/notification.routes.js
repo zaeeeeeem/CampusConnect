@@ -16,16 +16,14 @@ const router = Router();
 
 router.get('/', requireAuth, getNotifications);
 router.get('/:id', requireAuth, getNotificationById);
-router.post(
-  '/',
+router.post('/',
   requireAuth,
   authorizeRoles(Roles.ADMIN, Roles.CLUB_ADMIN),
   notificationValidator,
   validateRequest,
   createNotification
 );
-router.put(
-  '/:id',
+router.put('/:id',
   requireAuth,
   authorizeRoles(Roles.ADMIN, Roles.CLUB_ADMIN),
   notificationValidator,

@@ -30,8 +30,13 @@ export const ClubInfo = () => {
   const loadClubData = async () => {
     try {
       setLoading(true);
+      console.log('Loading club data for user:', user);
+
       if (user?.clubId) {
+        console.log('Fetching club with ID:', user.clubId);
         const response = await clubService.getById(user.clubId);
+        console.log('Club data response:', response);
+
         if (response.success) {
           setClub(response.data);
           setFormData({
@@ -47,10 +52,13 @@ export const ClubInfo = () => {
             },
           });
         }
+      } else {
+        console.error('No clubId found on user object:', user);
+        alert('You are not associated with any club. Please contact the administrator to assign you to a club.');
       }
     } catch (error) {
       console.error('Failed to load club data:', error);
-      alert('Failed to load club information');
+      alert('Failed to load club information: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -77,17 +85,28 @@ export const ClubInfo = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.clubId) return;
+
+    if (!user?.clubId) {
+      alert('You are not associated with any club. Please contact the administrator.');
+      console.error('ClubId missing from user:', user);
+      return;
+    }
 
     try {
       setSaving(true);
+      console.log('Updating club:', user.clubId, formData);
       const response = await clubService.update(user.clubId, formData);
+      console.log('Update response:', response);
+
       if (response.success) {
         setClub(response.data);
         setEditing(false);
         alert('Club information updated successfully!');
+      } else {
+        alert('Failed to update: ' + (response.message || 'Unknown error'));
       }
     } catch (error: any) {
+      console.error('Update error:', error);
       alert(error.message || 'Failed to update club information');
     } finally {
       setSaving(false);

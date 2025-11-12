@@ -11,8 +11,7 @@ import { Roles } from '../utils/roles.js';
 
 const router = Router();
 
-router.post(
-  '/generate/:eventId',
+router.post('/generate/:eventId',
   requireAuth,
   authorizeRoles(Roles.CLUB_ADMIN, Roles.ADMIN),
   generateCertificates

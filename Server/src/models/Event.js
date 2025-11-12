@@ -30,6 +30,9 @@ const eventSchema = new mongoose.Schema(
       required: true,
       validate: {
         validator(value) {
+          if (['completed', 'cancelled'].includes(this.status)) {
+            return true;
+          }
           return value > new Date();
         },
         message: 'startDate must be in the future',
